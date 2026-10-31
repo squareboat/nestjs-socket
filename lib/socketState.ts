@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import type { Redis } from 'ioredis';
 import { SocketIds } from './interface';
 import { SocketService } from './service';
@@ -15,7 +15,9 @@ const logger = new Logger('SocketState');
  */
 @Injectable()
 export class SocketState {
-  constructor(private readonly socketService: SocketService) {}
+  // Optional, as in 0.1.x: SocketState in a module's own providers, or `new SocketState()`,
+  // uses the connection of the most recently started SbSocketModule.
+  constructor(@Optional() private readonly socketService?: SocketService) {}
 
   /** Add a socket id to the set stored at `key`. */
   async add(key: string, value: string): Promise<boolean> {
@@ -45,7 +47,13 @@ export class SocketState {
   }
 
   private get redis(): Redis {
-    return this.socketService.client;
+    const client = this.socketService?.client ?? SocketService.redisClient;
+    if (!client) {
+      throw new Error(
+        'SocketState: no Redis connection. Import SbSocketModule.register() or registerAsync() and use SocketState after the app has started.',
+      );
+    }
+    return client;
   }
 
   private async run<T>(method: string, closedValue: T, command: (redis: Redis) => Promise<T>): Promise<T> {
