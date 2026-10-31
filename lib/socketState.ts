@@ -1,28 +1,33 @@
-import { SocketService } from './service';
-import { SocketIds } from './interface';
 import { Injectable } from '@nestjs/common';
+import { SocketIds } from './interface';
+import { SocketService } from './service';
 
+/**
+ * Keeps sets of socket ids in Redis, e.g. one set per user, so that every
+ * app instance can find the sockets of a user.
+ */
 @Injectable()
 export class SocketState {
-  async add(key: string, value: string): Promise<boolean> {
-    const redis = SocketService.redisClient;
+  constructor(private readonly socketService: SocketService) {}
 
-    await redis.sadd(key, value);
+  /** Add a socket id to the set stored at `key`. */
+  async add(key: string, value: string): Promise<boolean> {
+    await this.socketService.client.sadd(key, value);
     return true;
   }
 
+  /** All socket ids stored at `key`. */
   async getAll(key: string): Promise<SocketIds> {
-    const redis = SocketService.redisClient;
-    return redis.smembers(key);
+    return this.socketService.client.smembers(key);
   }
 
+  /** Remove one socket id from the set stored at `key`. */
   async remove(key: string, value: string): Promise<void> {
-    const redis = SocketService.redisClient;
-    await redis.srem(key, value);
+    await this.socketService.client.srem(key, value);
   }
 
+  /** Remove the whole set stored at `key`. */
   async clear(key: string): Promise<void> {
-    const redis = SocketService.redisClient;
-    await redis.del(key);
+    await this.socketService.client.del(key);
   }
 }
