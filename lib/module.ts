@@ -29,7 +29,7 @@ export class SbSocketModule {
         SocketState,
         { provide: SquareboatSocket.socketOptions, useValue: options },
       ],
-      exports: [],
+      exports: [SocketService, SocketState],
     };
   }
 
@@ -46,7 +46,7 @@ export class SbSocketModule {
         SocketService,
         SocketState,
       ],
-      exports: [],
+      exports: [SocketService, SocketState],
     };
   }
 
