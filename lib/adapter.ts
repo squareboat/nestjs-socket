@@ -44,7 +44,13 @@ export class RedisIoAdapter extends IoAdapter {
 
   createIOServer(port: number, options?: ServerOptions): any {
     const server = super.createIOServer(port, options);
-    if (this.adapterConstructor) server.adapter(this.adapterConstructor);
+    if (this.adapterConstructor) {
+      server.adapter(this.adapterConstructor);
+    } else {
+      logger.warn(
+        'connectToRedis() was not called before app.useWebSocketAdapter(): using the in-memory adapter, so events do not reach clients connected to other instances',
+      );
+    }
     this.servers.add(server);
     return server;
   }
