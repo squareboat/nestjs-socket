@@ -1,5 +1,4 @@
-import { DynamicModule, Global, Module, Provider, Type } from '@nestjs/common';
-import { RedisIoAdapter } from './adapter';
+import { DynamicModule, Module, Provider, Type } from '@nestjs/common';
 import { SquareboatSocket } from './constant';
 import {
   SocketAsyncOptions,
@@ -29,7 +28,7 @@ export class SbSocketModule {
         SocketState,
         { provide: SquareboatSocket.socketOptions, useValue: options },
       ],
-      exports: [],
+      exports: [SocketService, SocketState],
     };
   }
 
@@ -40,13 +39,16 @@ export class SbSocketModule {
     return {
       global: options.isGlobal || false,
       module: SbSocketModule,
-      imports: [],
+      imports: options.imports || [],
       providers: [
         this.createOptionsProvider(options),
+        ...(options.useClass
+          ? [{ provide: options.useClass, useClass: options.useClass }]
+          : []),
         SocketService,
         SocketState,
       ],
-      exports: [],
+      exports: [SocketService, SocketState],
     };
   }
 
@@ -60,7 +62,7 @@ export class SbSocketModule {
     }
 
     const inject = [
-      (options.useClass || options.useExisting) as Type<SocketOptions>,
+      (options.useClass || options.useExisting) as Type<SocketAsyncOptionsFactory>,
     ];
 
     return {

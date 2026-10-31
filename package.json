@@ -1,24 +1,26 @@
 {
   "name": "@squareboat/nestjs-socket",
-  "version": "0.1.15",
-  "description": "A SocketIO Redis Adapater package for your NestJS Applications",
+  "version": "0.2.0",
+  "description": "Socket.IO Redis adapter and socket id store for your NestJS applications",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "keywords": [
     "nestjs",
     "nestjs-socketio",
+    "nestjs-websockets",
     "nestjs-redis",
-    "socketio-redis"
+    "socketio-redis",
+    "socket.io"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/squareboat/nestjs-objection.git"
+    "url": "https://github.com/squareboat/nestjs-socket.git"
   },
   "bugs": {
-    "url": "https://github.com/squareboat/nestjs-objection/issues"
+    "url": "https://github.com/squareboat/nestjs-socket/issues"
   },
-  "homepage": "https://squareboat.com/open-source/database/",
-  "author": "Vinayak Sarawagi <vinayaksarawagi25@gmail.com>",
+  "homepage": "https://github.com/squareboat/nestjs-socket",
+  "author": "Squareboat <hi@squareboat.com>",
   "private": false,
   "license": "MIT",
   "scripts": {
@@ -30,22 +32,33 @@
     "prepublish:next": "npm run build",
     "publish:next": "npm publish --access public --tag next",
     "test:e2e": "jest --config ./tests/jest-e2e.json --runInBand",
-    "test:e2e:dev": "jest --config ./tests/jest-e2e.json --runInBand --watch"
+    "test:e2e:dev": "jest --config ./tests/jest-e2e.json --runInBand --watch",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "@nestjs/common": "^9.4.3",
-    "@nestjs/core": "^9.4.3",
-    "@types/node": "^18.0.5",
-    "typescript": "^4.7.4"
+    "@nestjs/common": "^12.3.2",
+    "@nestjs/core": "^12.3.2",
+    "@nestjs/platform-socket.io": "^12.3.2",
+    "@nestjs/websockets": "^12.3.2",
+    "@types/node": "^20.19.43",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@nestjs/common": "^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0",
-    "@nestjs/core": "^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0"
+    "@nestjs/common": "^10.0.0 || ^11.0.0 || ^12.0.0",
+    "@nestjs/platform-socket.io": "^10.0.0 || ^11.0.0 || ^12.0.0",
+    "@nestjs/websockets": "^10.0.0 || ^11.0.0 || ^12.0.0",
+    "reflect-metadata": "^0.1.13 || ^0.2.0"
   },
   "dependencies": {
-    "@nestjs/platform-socket.io": "^9.4.2",
-    "@socket.io/redis-adapter": "^8.2.1",
-    "ioredis": "^5.3.2",
-    "socket.io": "^4.6.2"
+    "@socket.io/redis-adapter": "^8.3.0",
+    "ioredis": "^6.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
   }
 }
