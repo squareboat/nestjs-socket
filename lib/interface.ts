@@ -1,4 +1,5 @@
 import { ModuleMetadata, Type } from '@nestjs/common';
+import type { RedisAdapterOptions } from '@socket.io/redis-adapter';
 import type { RedisOptions } from 'ioredis';
 
 export interface SocketOptions {
@@ -8,6 +9,12 @@ export interface SocketOptions {
   pubRedis: RedisOptions;
   /** ioredis options for the subscriber connection. */
   subRedis: RedisOptions;
+  /**
+   * Options for `@socket.io/redis-adapter`, used by `RedisIoAdapter`. Redis pub/sub ignores
+   * the `db` number, so give each app or environment that shares a Redis its own `key`
+   * (default `"socket.io"`); all instances of one app must use the same key.
+   */
+  adapterOptions?: Partial<RedisAdapterOptions>;
 }
 
 export interface SocketAsyncOptions extends Pick<ModuleMetadata, 'imports'> {

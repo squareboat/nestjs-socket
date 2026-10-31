@@ -39,7 +39,7 @@ export class RedisIoAdapter extends IoAdapter {
     handleCommandErrors(subClient);
     this.pubClient = pubClient;
     this.subClient = subClient;
-    this.adapterConstructor = createAdapter(pubClient, subClient);
+    this.adapterConstructor = createAdapter(pubClient, subClient, this.config.adapterOptions);
   }
 
   createIOServer(port: number, options?: ServerOptions): any {
