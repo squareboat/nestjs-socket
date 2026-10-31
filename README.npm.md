@@ -17,7 +17,7 @@ npm i @squareboat/nestjs-socket @nestjs/websockets @nestjs/platform-socket.io
 yarn add @squareboat/nestjs-socket @nestjs/websockets @nestjs/platform-socket.io
 ```
 
-Requires Node.js 20.19+ or 22.12+ and NestJS 10, 11 or 12. Install `@nestjs/websockets` and `@nestjs/platform-socket.io` at the same major version as your `@nestjs/core`. The package uses Socket.IO 4 and ioredis 6, which supports Redis 6.2 and later.
+Requires Node.js 20.19+ or 22.12+ and NestJS 10, 11 or 12. Install `@nestjs/websockets` and `@nestjs/platform-socket.io` at the same major version as your `@nestjs/core`. The package uses Socket.IO 4 and ioredis 6, which supports Redis 6.2 and later (ioredis 5 also supported older servers).
 
 ## Configuration
 
@@ -41,6 +41,7 @@ const redis = {
       isGlobal: true,
       pubRedis: redis,
       subRedis: redis,
+      adapterOptions: { key: `myapp-${process.env.NODE_ENV}` },
     }),
   ],
 })
@@ -49,7 +50,18 @@ export class AppModule {}
 
 `pubRedis` and `subRedis` are [ioredis options](https://github.com/redis/ioredis#connect-to-redis). The adapter opens one connection with each. `SocketState` opens its own connection with the `pubRedis` options.
 
-With `isGlobal: true`, `SocketState` and `SocketService` can be injected in every module. Without it, import `SbSocketModule` in the modules that use them.
+`adapterOptions` are passed to [`@socket.io/redis-adapter`](https://github.com/socketio/socket.io-redis-adapter#options). **Redis pub/sub ignores `db`**: two apps (or staging and production) on the same Redis with the same `key` (default `"socket.io"`) receive each other's events, even with different `db` numbers. Give each app and environment its own `key`, and the same `key` to all instances of one app.
+
+With `isGlobal: true`, `SocketState` and `SocketService` can be injected in every module. Without it, call `register()` once in a module of your own that re-exports `SbSocketModule`, and import that module where you need them. Each `register()` call opens another Redis connection.
+
+```typescript
+// src/socket.module.ts
+@Module({
+  imports: [SbSocketModule.register({ pubRedis: redis, subRedis: redis })],
+  exports: [SbSocketModule],
+})
+export class SocketModule {}
+```
 
 ### Asynchronous Registration
 
@@ -132,7 +144,9 @@ async function bootstrap() {
 bootstrap();
 ```
 
-`app.close()` closes the adapter's and `SocketState`'s Redis connections.
+If `connectToRedis()` is not called, the app still starts but uses Socket.IO's in-memory adapter (a warning is logged), so events do not reach clients on other instances.
+
+`app.close()` disconnects this instance's sockets (so `handleDisconnect()` runs), then closes the adapter's and `SocketState`'s Redis connections. When Redis does not answer, each connection is dropped after a second.
 
 ## Usage
 
@@ -166,6 +180,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   async handleDisconnect(client: Socket) {
+    // call SocketState before any other await: during app.close() Redis is closed soon after
     await this.socketState.remove(`user:${client.data.userId}`, client.id);
   }
 
@@ -197,7 +212,9 @@ Add the gateway to the `providers` of a module, as with any Nest gateway.
 | `remove(key, socketId)`  | Removes one socket id from the set at `key`.        |
 | `clear(key)`             | Deletes the set at `key`.                           |
 
-The keys are plain Redis keys, so choose names that do not clash with your other data. When an instance stops without closing, the ids of its sockets stay in Redis; sending to an id that is no longer connected does nothing.
+The keys are plain Redis keys in the `pubRedis` `db`, so choose names that do not clash with your other data. When an instance stops without closing, the ids of its sockets stay in Redis; sending to an id that is no longer connected does nothing.
+
+**Shutdown:** `SocketState`'s connection is closed in `onApplicationShutdown`. Calls after that (for example from a `handleDisconnect()` that awaited something else first) log a warning and do nothing: `add()` returns false, `getAll()` returns `[]`. On NestJS 10, `SbSocketModule`'s `onApplicationShutdown` runs before your module's, so do shutdown cleanup with `SocketState` in `beforeApplicationShutdown`.
 
 ### SocketService
 
@@ -205,8 +222,10 @@ The keys are plain Redis keys, so choose names that do not clash with your other
 
 ## Upgrading from 0.1.x
 
+- NestJS 7, 8 and 9 and Node.js before 20.19 (and 22.0 to 22.11) are no longer supported.
 - `@nestjs/platform-socket.io` is now a peer dependency (0.1.x pulled in version 9). Install it and `@nestjs/websockets` at your NestJS major.
-- ioredis 5 was replaced by ioredis 6, which talks RESP3 by default. Set `protocol: 2` in `pubRedis` and `subRedis` to keep the old protocol.
+- ioredis 5 was replaced by ioredis 6, which supports Redis 6.2 and later.
+- `app.close()` now closes the Redis connections (0.1.x left them open, so the process did not exit). `SocketState` calls after that warn and do nothing; see Shutdown above.
 - `register()` and `registerAsync()` now export `SocketState` and `SocketService`; before, they could not be injected outside the module.
 - `registerAsync()` now uses `imports`, and `useClass` works.
 - `SocketState` no longer logs keys and socket ids with `console.log`.
