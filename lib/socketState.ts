@@ -5,7 +5,6 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class SocketState {
   async add(key: string, value: string): Promise<boolean> {
-    console.log(key, value);
     const redis = SocketService.redisClient;
 
     await redis.sadd(key, value);
@@ -14,9 +13,7 @@ export class SocketState {
 
   async getAll(key: string): Promise<SocketIds> {
     const redis = SocketService.redisClient;
-    const socketIds = await redis.smembers(key);
-    console.log(socketIds);
-    return socketIds;
+    return redis.smembers(key);
   }
 
   async remove(key: string, value: string): Promise<void> {
